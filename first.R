@@ -4,12 +4,22 @@ library(NLP)
 library(openNLP)
 library(RWeka)
 library(qdap)
-
+#序列标注（maxent chunker）、
+#实体命名识别（maxent entity annotator）、
+#词性标注器（ops tag annotator）、
+#句子探测器（sent toen annotator）、
+#解析器（parse annotator）、
+#标记生成器（maxent word token annotator）
 #some text
-s = paste(c("Pierre Vinken, 61 years old, will join the board as a ",
-             "nonexecutive director Nov. 29.\n",
-             "Mr. Vinken is chairman of Elsevier N.V., ",
-             "the Dutch publishing group."),collapse='')
+s = paste(
+  c(
+    "Pierre Vinken, 61 years old, will join the board as a ",
+    "nonexecutive director Nov. 29.\n",
+    "Mr. Vinken is chairman of Elsevier N.V., ",
+    "the Dutch publishing group."
+  ),
+  collapse = ''
+)
 s
 s = as.String(s) # trans the character verctor into string
 #   generate different kinds of annotators. Several choices are
@@ -23,24 +33,31 @@ chunk_token_annotator = Maxent_Chunk_Annotator()
 entity_token_annotator = Maxent_Entity_Annotator()
 pos_tag_annotator = Maxent_POS_Tag_Annotator()
 # in the example only two (sentense token and word token are used)
+# 首先識別句子 然後識別單詞 最後識別單詞的詞性  sent-word-tags
+
 a2 = annotate(s, list(sent_token_annotator, word_token_annotator))
-a3=annotate(s,pos_tag_annotator,a2)
+a3 = annotate(s, pos_tag_annotator, a2)
 a3
-a3w=subset(a3,type=='word')
-tags=sapply(a3w$features,'[[','POS')
+a3w = subset(a3, type == 'word')
+tags = sapply(a3w$features, '[[', 'POS')
 table(tags)
 #extract token/Pos pairs(all of them ): easy??
 #sprintf means string pint format C-style
-          
-sprintf('%s/%s',s[a3w],tags)
+
+sprintf('%s/%s', s[a3w], tags)
 # small example on sapply and lapply
-x <- list(a = 1:10, beta = exp(-3:3), logic = c(TRUE,FALSE,FALSE,TRUE))
+x <-
+  list(
+    a = 1:10,
+    beta = exp(-3:3),
+    logic = c(TRUE, FALSE, FALSE, TRUE)
+  )
 x
-x_mean=lapply(x,mean)
+x_mean = lapply(x, mean)
 x_mean
-x_quan=sapply(x,quantile)
+x_quan = sapply(x, quantile)
 x_quan
-x_quan1=lapply(x,quantile,probs=0:4/4)
+x_quan1 = lapply(x, quantile, probs = 0:4 / 4)
 x_quan1
 
 
@@ -50,30 +67,39 @@ x_quan1
 
 
 # Demo of openNlp named entity extraction visualise output
-text=readLines(file.choose())
+text = readLines(file.choose())
 print(text)
-text=paste(text,collapse =" ")
-text=as.String(text)
+text = paste(text, collapse = " ")
+text = as.String(text)
 # use three annotators in first.R
 
- 
-# define other annotators
-person_token_annotator=Maxent_Entity_Annotator(kind='person')
-loaction_token_annotator=Maxent_Entity_Annotator(kind='location')
-date_token_annotator=Maxent_Entity_Annotator(kind='date')
-org_token_annotator=Maxent_Entity_Annotator(kind='org')
-pipeLine=list(sent_token_annotator,word_token_annotator,person_token_annotator,location_token_annotator,date_token_annotator,org_token_annotator)
-# this is just as the previous exercise  get a new collection of annotators
-text_annotations=annotate(text,pipeLine)
-text_doc=AnnotatedPlainTextDocument(text,text_annotations)
 
-entities = function(doc,kind)
+# define other annotators
+person_token_annotator = Maxent_Entity_Annotator(kind = 'person')
+loaction_token_annotator = Maxent_Entity_Annotator(kind = 'location')
+date_token_annotator = Maxent_Entity_Annotator(kind = 'date')
+org_token_annotator = Maxent_Entity_Annotator(kind = 'org')
+
+# 思路和之前的例子一樣  首先是識別句子 然後是 單詞  詞性(可以忽略)   然後是entity
+pipeLine = list(
+  sent_token_annotator,
+  word_token_annotator,
+  person_token_annotator,
+  location_token_annotator,
+  date_token_annotator,
+  org_token_annotator
+)
+# this is just as the previous exercise  get a new collection of annotators
+text_annotations = annotate(text, pipeLine)
+text_doc = AnnotatedPlainTextDocument(text, text_annotations)
+
+entities = function(doc, kind)
 {
   s = doc$content
   a = annotations(doc)[[1]]
   if (hasArg(kind))
   {
-    k = sapply(a$features,'[[',"kind")
+    k = sapply(a$features, '[[', "kind")
     s[a[k == kind]]
   }
   else
@@ -81,17 +107,16 @@ entities = function(doc,kind)
     s[a[a$type == "entity"]]
   }
 }
- plot(table(entities(text_doc,kind='person')))
- entities(text_doc,kind='location')
- entities(text_doc,kind='date')
- entities(text_doc,kind='organization')
- library(googleVis)
- # library(rattle)
- # rattle()
-dfp=data.frame(table(entities(text_doc,kind='person')))
-Barp=gvisColumnChart(dfp) 
+plot(table(entities(text_doc, kind = 'person')))
+entities(text_doc, kind = 'location')
+entities(text_doc, kind = 'date')
+entities(text_doc, kind = 'organization')
+library(googleVis)
+# library(rattle)
+# rattle()
+dfp = data.frame(table(entities(text_doc, kind = 'person')))
+Barp = gvisColumnChart(dfp)
 plot(Barp)
-dfl=data.frame(table(entities(text_doc,kind='location')))
-Barl=gvisComboChart(dfl) 
+dfl = data.frame(table(entities(text_doc, kind = 'location')))
+Barl = gvisComboChart(dfl)
 plot(Barl)
- 
